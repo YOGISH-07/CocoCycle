@@ -66,17 +66,19 @@ export default function MarketplaceView() {
     // Global search query
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || 
-      item.title.toLowerCase().includes(q) ||
-      item.sellerName.toLowerCase().includes(q) ||
-      item.location.toLowerCase().includes(q) ||
-      item.pincode.toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q);
+      (item.title && item.title.toLowerCase().includes(q)) ||
+      (item.sellerName && item.sellerName.toLowerCase().includes(q)) ||
+      (item.location && item.location.toLowerCase().includes(q)) ||
+      (item.pincode && item.pincode.toLowerCase().includes(q)) ||
+      (item.description && item.description.toLowerCase().includes(q)) ||
+      (item.categoryName && item.categoryName.toLowerCase().includes(q)) ||
+      (item.condition && item.condition.toLowerCase().includes(q));
 
     // Specific location/pincode search
     const p = pincodeSearch.toLowerCase().trim();
     const matchesPincode = !p || 
-      item.pincode.toLowerCase().includes(p) ||
-      item.location.toLowerCase().includes(p);
+      (item.pincode && item.pincode.toLowerCase().includes(p)) ||
+      (item.location && item.location.toLowerCase().includes(p));
 
     return matchesCategory && matchesCondition && matchesSearch && matchesPincode;
   });
@@ -193,6 +195,10 @@ export default function MarketplaceView() {
           {categories.map((cat) => {
             const IconComp = cat.icon;
             const isActive = selectedCategory === cat.id;
+            const count = cat.id === 'all' 
+              ? listings.length 
+              : listings.filter(item => item.category === cat.id).length;
+
             return (
               <button
                 key={cat.id}
@@ -204,7 +210,12 @@ export default function MarketplaceView() {
                 }`}
               >
                 <IconComp className="w-3.5 h-3.5" />
-                {cat.name}
+                <span>{cat.name}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                  isActive ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900 text-slate-400'
+                }`}>
+                  {count}
+                </span>
               </button>
             );
           })}
