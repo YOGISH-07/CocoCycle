@@ -675,7 +675,6 @@ export const AppProvider = ({ children }) => {
 
     // Inquiries / RFQs
     inquiries,
-    setInquiries,
     orders: inquiries, // Backward compatibility alias for Header/App
     submitRFQ,
     updateInquiryStatus,
