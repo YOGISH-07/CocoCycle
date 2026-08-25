@@ -215,10 +215,15 @@ export const AppProvider = ({ children }) => {
   };
 
   const registerWithEmail = async (email, password, metadata = {}) => {
+    const redirectTo = typeof window !== 'undefined' && window.location && window.location.origin
+      ? window.location.origin
+      : 'https://coco-cycle.vercel.app';
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectTo,
         data: {
           full_name: metadata.fullName || metadata.name || '',
           company: metadata.company || metadata.companyName || '',
