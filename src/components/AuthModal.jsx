@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Building2,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { INITIAL_USER_ROLES } from '../data/mockData';
 
@@ -83,6 +84,7 @@ export default function AuthModal() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     setError('');
     setIsLoading(true);
 
@@ -456,10 +458,22 @@ export default function AuthModal() {
             {/* Submit CTA Button */}
             <button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 mt-2"
+              disabled={isLoading}
+              className={`w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 mt-2 ${
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              {mode === 'login' ? 'Sign In to CocoCycle' : 'Complete Registration'}
-              <ArrowRight className="w-4 h-4" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                  <span>Processing Auth Request...</span>
+                </>
+              ) : (
+                <>
+                  <span>{mode === 'login' ? 'Sign In to CocoCycle' : 'Complete Registration'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 

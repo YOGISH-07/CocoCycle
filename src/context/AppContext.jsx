@@ -230,8 +230,13 @@ export const AppProvider = ({ children }) => {
     });
 
     if (error) {
-      addToast(`Registration failed: ${error.message}`, 'error');
-      return { success: false, error };
+      const isRateLimit = (error.message || '').toLowerCase().includes('rate limit') || error.status === 429;
+      const displayMsg = isRateLimit
+        ? 'Supabase email rate limit exceeded (3 signups per hour allowed on free tier). If registered, please sign in. Otherwise, please try again later.'
+        : `Registration failed: ${error.message}`;
+
+      addToast(displayMsg, 'error');
+      return { success: false, error: { ...error, message: displayMsg } };
     }
 
     addToast(`Account created for ${email}! Signed in to CocoCycle.`, 'success');
