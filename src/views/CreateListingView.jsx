@@ -29,7 +29,6 @@ export default function CreateListingView() {
   const { 
     userRole, 
     currentUser, 
-    switchRole, 
     setIsAuthModalOpen, 
     addListing, 
     setActiveTab 
@@ -189,7 +188,7 @@ export default function CreateListingView() {
     setIsSubmitting(false);
 
     if (res && !res.success) {
-      setErrors({ submit: res.error?.message || 'Failed to post listing. Please check inputs and try again.' });
+      setErrors({ submit: (res.error && res.error.message) || 'Failed to post listing. Please check inputs and try again.' });
     }
   };
 

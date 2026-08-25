@@ -20,7 +20,7 @@ import {
 export default function Header() {
   const { 
     userRole, 
-    switchRole, 
+    loginDemoPersona, 
     activeTab, 
     setActiveTab, 
     isLoggedIn, 
@@ -230,19 +230,19 @@ export default function Header() {
           {import.meta.env.VITE_ENABLE_DEMO_PERSONAS !== 'false' && (
             <div className="sm:hidden flex bg-slate-900 border border-slate-800 p-1 rounded-xl items-center justify-around">
               <button
-                onClick={() => { switchRole('BUYER'); setMobileMenuOpen(false); }}
+                onClick={() => { loginDemoPersona('BUYER'); setMobileMenuOpen(false); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold ${userRole === 'BUYER' ? 'bg-emerald-500 text-slate-950 font-black' : 'text-slate-400'}`}
               >
                 Buyer Mode
               </button>
               <button
-                onClick={() => { switchRole('SELLER'); setMobileMenuOpen(false); }}
+                onClick={() => { loginDemoPersona('SELLER'); setMobileMenuOpen(false); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold ${userRole === 'SELLER' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400'}`}
               >
                 Seller Mode
               </button>
               <button
-                onClick={() => { switchRole('ADMIN'); setMobileMenuOpen(false); }}
+                onClick={() => { loginDemoPersona('ADMIN'); setMobileMenuOpen(false); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold ${userRole === 'ADMIN' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}
               >
                 Admin Mode
