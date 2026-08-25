@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Building2, 
@@ -15,13 +15,19 @@ import {
   ArrowRight, 
   Trash2,
   Sparkles,
-  UserCheck
+  UserCheck,
+  X,
+  Calendar,
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 export default function BuyerDashboardView() {
   const { 
     currentUser, 
     isLoggedIn, 
+    isAuthLoading,
+    isInquiriesLoading,
     setIsAuthModalOpen, 
     listings, 
     inquiries, 
@@ -31,6 +37,20 @@ export default function BuyerDashboardView() {
     setActiveTab,
     setIsEditProfileOpen
   } = useApp();
+
+  // State for RFQ detail view modal
+  const [selectedRFQ, setSelectedRFQ] = useState(null);
+  const [rfqFilter, setRfqFilter] = useState('all'); // 'all' | 'pending' | 'accepted' | 'rejected'
+
+  if (isAuthLoading) {
+    return (
+      <div className="max-w-md mx-auto my-12 bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center space-y-4 shadow-2xl animate-pulse">
+        <div className="w-14 h-14 rounded-2xl bg-slate-950 mx-auto"></div>
+        <div className="h-6 bg-slate-950 rounded-lg w-2/3 mx-auto"></div>
+        <div className="h-4 bg-slate-950 rounded-lg w-full"></div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn || !currentUser) {
     return (
@@ -50,7 +70,7 @@ export default function BuyerDashboardView() {
     );
   }
 
-  // Filter RFQs sent by current buyer
+  // Filter RFQs strictly sent by current buyer
   const buyerInquiries = inquiries.filter(
     (inq) => (currentUser?.id && inq.buyerId === currentUser.id) || (currentUser?.name && inq.buyerName === currentUser.name)
   );
@@ -67,12 +87,17 @@ export default function BuyerDashboardView() {
     0
   );
 
+  // Filtered RFQs list
+  const filteredInquiries = buyerInquiries.filter((inq) => {
+    if (rfqFilter === 'all') return true;
+    return inq.status === rfqFilter;
+  });
+
   const handleViewListingByInquiry = (inquiryItem) => {
     const targetListing = listings.find((item) => item.id === inquiryItem.listingId);
     if (targetListing) {
       setSelectedListing(targetListing);
     } else {
-      // Fallback mock object if item was removed
       setSelectedListing({
         id: inquiryItem.listingId,
         title: inquiryItem.listingTitle,
@@ -178,17 +203,43 @@ export default function BuyerDashboardView() {
 
       {/* 3. BUYER SENT RFQS SECTION */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
-        <h2 className="text-lg font-black text-white flex items-center gap-2">
-          <Send className="w-5 h-5 text-emerald-400" />
-          Your Submitted Quote Requests / RFQs ({buyerInquiries.length})
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg font-black text-white flex items-center gap-2">
+            <Send className="w-5 h-5 text-emerald-400" />
+            Your Submitted Quote Requests / RFQs ({buyerInquiries.length})
+          </h2>
 
-        {buyerInquiries.length > 0 ? (
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-2">
+            {['all', 'pending', 'accepted', 'rejected'].map((filterKey) => (
+              <button
+                key={filterKey}
+                onClick={() => setRfqFilter(filterKey)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold capitalize transition-all ${
+                  rfqFilter === filterKey
+                    ? 'bg-emerald-500 text-slate-950 shadow-md'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {filterKey}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isInquiriesLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((idx) => (
+              <div key={idx} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 animate-pulse h-24"></div>
+            ))}
+          </div>
+        ) : filteredInquiries.length > 0 ? (
           <div className="space-y-4">
-            {buyerInquiries.map((inq) => (
+            {filteredInquiries.map((inq) => (
               <div 
                 key={inq.id}
-                className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 hover:border-slate-700 transition-all"
+                className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 hover:border-slate-700 transition-all cursor-pointer"
+                onClick={() => setSelectedRFQ(inq)}
               >
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -238,12 +289,21 @@ export default function BuyerDashboardView() {
                     "{inq.message || 'Standard quote request submitted.'}"
                   </p>
 
-                  <button
-                    onClick={() => handleViewListingByInquiry(inq)}
-                    className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold px-4 py-1.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shrink-0"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-emerald-400" /> View Listing
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedRFQ(inq); }}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center gap-1 shrink-0"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" /> RFQ Details
+                    </button>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleViewListingByInquiry(inq); }}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center gap-1 shrink-0"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-400" /> View Supply
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -254,8 +314,8 @@ export default function BuyerDashboardView() {
             <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto">
               <Send className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-white">No RFQs Sent Yet</h3>
-            <p className="text-xs text-slate-400">You haven't requested any bulk quotes from sellers yet. Explore the marketplace to find raw materials.</p>
+            <h3 className="text-sm font-bold text-white">No RFQs Found</h3>
+            <p className="text-xs text-slate-400">You haven't requested any bulk quotes matching this status filter. Explore the marketplace to find raw materials.</p>
             <button
               onClick={() => setActiveTab('marketplace')}
               className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-md inline-flex items-center gap-1.5"
@@ -324,6 +384,98 @@ export default function BuyerDashboardView() {
           </div>
         )}
       </div>
+
+
+      {/* 5. RFQ DETAIL MODAL */}
+      {selectedRFQ && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div 
+            className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 shrink-0">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-base font-black text-white tracking-tight">RFQ Quote Specifications</h2>
+              </div>
+
+              <button
+                onClick={() => setSelectedRFQ(null)}
+                className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold">Item: {selectedRFQ.listingTitle}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase border ${
+                    selectedRFQ.status === 'accepted' ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40' :
+                    selectedRFQ.status === 'rejected' ? 'bg-rose-950 text-rose-400 border-rose-500/40' :
+                    'bg-amber-950 text-amber-400 border-amber-500/40'
+                  }`}>
+                    {selectedRFQ.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">Supplier: <strong>{selectedRFQ.sellerName}</strong></p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Requested Quantity</p>
+                  <p className="font-extrabold text-white mt-0.5">{selectedRFQ.requestedQuantity} {selectedRFQ.unit}</p>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Offered Price</p>
+                  <p className="font-extrabold text-emerald-400 mt-0.5">₹{selectedRFQ.offeredPricePerUnit.toLocaleString()} / {selectedRFQ.unit}</p>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Total RFQ Value</p>
+                  <p className="font-black text-white mt-0.5">₹{(selectedRFQ.totalAmount || (selectedRFQ.requestedQuantity * selectedRFQ.offeredPricePerUnit)).toLocaleString()}</p>
+                </div>
+
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Delivery Location</p>
+                  <p className="font-semibold text-slate-300 mt-0.5 truncate">{selectedRFQ.deliveryLocation || 'Location specified'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Message & Specifications</p>
+                <p className="text-xs text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800 leading-relaxed italic">
+                  "{selectedRFQ.message || 'No additional message.'}"
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  onClick={() => {
+                    const rfq = selectedRFQ;
+                    setSelectedRFQ(null);
+                    handleViewListingByInquiry(rfq);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" /> View Waste Supply Listing
+                </button>
+
+                <button
+                  onClick={() => setSelectedRFQ(null)}
+                  className="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
