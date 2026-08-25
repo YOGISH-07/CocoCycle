@@ -25,13 +25,17 @@ import {
   Clock, 
   ShieldAlert,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 
 export default function AdminDashboardView() {
   const { 
     userRole, 
     currentUser, 
+    isAuthLoading,
+    isListingsLoading,
+    isInquiriesLoading,
     listings, 
     inquiries, 
     approveListing, 
@@ -44,13 +48,26 @@ export default function AdminDashboardView() {
     marketStats 
   } = useApp();
 
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'flagged' | 'rejected' | 'featured'
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'approved' | 'flagged' | 'featured' | 'rejected'
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
+  // RFQ Monitor Filter
+  const [rfqFilter, setRfqFilter] = useState('all'); // 'all' | 'pending' | 'accepted' | 'rejected'
+
   // Confirmation Modal state for destructive actions
   const [confirmModal, setConfirmModal] = useState(null); // { type: 'delete' | 'reject', listing: item }
+
+  if (isAuthLoading) {
+    return (
+      <div className="max-w-md mx-auto my-12 bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center space-y-4 shadow-2xl animate-pulse">
+        <div className="w-14 h-14 rounded-2xl bg-slate-950 mx-auto"></div>
+        <div className="h-6 bg-slate-950 rounded-lg w-2/3 mx-auto"></div>
+        <div className="h-4 bg-slate-950 rounded-lg w-full"></div>
+      </div>
+    );
+  }
 
   // Security Check: Only allow Admin users
   if (userRole !== 'ADMIN' || !currentUser) {
@@ -80,7 +97,7 @@ export default function AdminDashboardView() {
 
   // Calculate status count tallies
   const pendingCount = listings.filter((i) => i.status === 'pending_approval' || i.status === 'pending').length;
-  const activeCount = listings.filter((i) => i.status === 'approved' || i.status === 'active').length;
+  const activeCount = listings.filter((i) => i.status === 'approved' || i.status === 'active' || i.status === 'Active').length;
   const flaggedCount = listings.filter((i) => i.status === 'flagged').length;
   const rejectedCount = listings.filter((i) => i.status === 'rejected').length;
   const featuredCount = listings.filter((i) => i.featured || i.status === 'featured').length;
@@ -91,10 +108,10 @@ export default function AdminDashboardView() {
     // Status tab filter
     let matchesStatus = true;
     if (statusFilter === 'pending') matchesStatus = item.status === 'pending_approval' || item.status === 'pending';
-    else if (statusFilter === 'approved') matchesStatus = item.status === 'approved' || item.status === 'active';
+    else if (statusFilter === 'approved') matchesStatus = item.status === 'approved' || item.status === 'active' || item.status === 'Active';
     else if (statusFilter === 'flagged') matchesStatus = item.status === 'flagged';
     else if (statusFilter === 'rejected') matchesStatus = item.status === 'rejected';
-    else if (statusFilter === 'featured') matchesStatus = item.featured || item.status === 'featured';
+    else if (statusFilter === 'featured') matchesStatus = Boolean(item.featured) || item.status === 'featured';
 
     // Category filter
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
@@ -102,10 +119,10 @@ export default function AdminDashboardView() {
     // Search query
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || 
-      item.title.toLowerCase().includes(q) ||
-      item.sellerName.toLowerCase().includes(q) ||
-      item.categoryName.toLowerCase().includes(q) ||
-      item.pincode.toLowerCase().includes(q);
+      (item.title && item.title.toLowerCase().includes(q)) ||
+      (item.sellerName && item.sellerName.toLowerCase().includes(q)) ||
+      (item.categoryName && item.categoryName.toLowerCase().includes(q)) ||
+      (item.pincode && item.pincode.toLowerCase().includes(q));
 
     return matchesStatus && matchesCategory && matchesSearch;
   });
@@ -115,8 +132,14 @@ export default function AdminDashboardView() {
     if (sortBy === 'price_high') return b.pricePerUnit - a.pricePerUnit;
     if (sortBy === 'price_low') return a.pricePerUnit - b.pricePerUnit;
     if (sortBy === 'quantity_high') return b.quantity - a.quantity;
-    return b.id.localeCompare(a.id); // newest
+    return (b.id || '').localeCompare(a.id || ''); // newest
   });
+
+  // Filter inquiries for monitor
+  const filteredInquiries = inquiries ? inquiries.filter((inq) => {
+    if (rfqFilter === 'all') return true;
+    return inq.status === rfqFilter;
+  }) : [];
 
   // Calculate real market price index per category
   const calculateCategoryBenchmark = (catKey) => {
@@ -135,13 +158,13 @@ export default function AdminDashboardView() {
   const pithBenchmark = calculateCategoryBenchmark('coir_pith');
   const shellBenchmark = calculateCategoryBenchmark('coconut_shell');
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!confirmModal) return;
     const { type, listing } = confirmModal;
     if (type === 'delete') {
-      deleteListing(listing.id);
+      await deleteListing(listing.id);
     } else if (type === 'reject') {
-      rejectListing(listing.id);
+      await rejectListing(listing.id);
     }
     setConfirmModal(null);
   };
@@ -202,12 +225,12 @@ export default function AdminDashboardView() {
 
         <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-1">
           <p className="text-[10px] font-bold text-slate-400 uppercase">Verified Sellers</p>
-          <p className="text-2xl font-black text-emerald-300">{marketStats.activeSellersCount || 340}</p>
+          <p className="text-2xl font-black text-emerald-300">{marketStats?.activeSellersCount || 340}</p>
         </div>
 
         <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-1">
           <p className="text-[10px] font-bold text-slate-400 uppercase">Industrial Buyers</p>
-          <p className="text-2xl font-black text-indigo-400">{marketStats.activeBuyersCount || 180}</p>
+          <p className="text-2xl font-black text-indigo-400">{marketStats?.activeBuyersCount || 180}</p>
         </div>
       </div>
 
@@ -330,7 +353,13 @@ export default function AdminDashboardView() {
         </div>
 
         {/* Moderation Items Table / Cards */}
-        {filteredListings.length > 0 ? (
+        {isListingsLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((idx) => (
+              <div key={idx} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 animate-pulse h-24"></div>
+            ))}
+          </div>
+        ) : filteredListings.length > 0 ? (
           <div className="space-y-3">
             {filteredListings.map((item) => (
               <div 
@@ -441,10 +470,10 @@ export default function AdminDashboardView() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-white">
-              {activeStatusTab === 'pending' ? 'All Pending Listings Moderated!' : 'No Listings Found'}
+              {statusFilter === 'pending' ? 'All Pending Listings Moderated!' : 'No Listings Found'}
             </h3>
             <p className="text-xs text-slate-400">
-              {activeStatusTab === 'pending'
+              {statusFilter === 'pending'
                 ? 'There are no pending waste supply listings awaiting administrator approval at this time.'
                 : 'No listings match the current status and category filters.'}
             </p>
@@ -455,27 +484,54 @@ export default function AdminDashboardView() {
 
       {/* 5. RFQ / TRANSACTION MONITOR SECTION */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
-        <h2 className="text-base font-black text-white flex items-center gap-2">
-          <Send className="w-4 h-4 text-sky-400" />
-          Recent RFQs & Trade Activity Monitor ({inquiries ? inquiries.length : 0})
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-base font-black text-white flex items-center gap-2">
+            <Send className="w-4 h-4 text-sky-400" />
+            Recent RFQs & Trade Activity Monitor ({inquiries ? inquiries.length : 0})
+          </h2>
 
-        {inquiries && inquiries.length > 0 ? (
+          {/* RFQ Status Filter Pills */}
+          <div className="flex items-center gap-2">
+            {['all', 'pending', 'accepted', 'rejected'].map((filterKey) => (
+              <button
+                key={filterKey}
+                onClick={() => setRfqFilter(filterKey)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold capitalize transition-all ${
+                  rfqFilter === filterKey
+                    ? 'bg-sky-500 text-slate-950 shadow-md'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {filterKey}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isInquiriesLoading ? (
           <div className="space-y-2">
-            {inquiries.map((inq) => (
+            {[1, 2].map((idx) => (
+              <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 animate-pulse h-16"></div>
+            ))}
+          </div>
+        ) : filteredInquiries.length > 0 ? (
+          <div className="space-y-2">
+            {filteredInquiries.map((inq) => (
               <div key={inq.id} className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-white">#{inq.id}</span>
                     <span className="text-slate-400 font-medium">• {inq.createdAt}</span>
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${
-                      inq.status === 'accepted' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' : 'bg-amber-950 text-amber-400 border border-amber-500/40'
+                      inq.status === 'accepted' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40' :
+                      inq.status === 'rejected' ? 'bg-rose-950 text-rose-400 border border-rose-500/40' :
+                      'bg-amber-950 text-amber-400 border border-amber-500/40'
                     }`}>
                       {inq.status}
                     </span>
                   </div>
                   <p className="text-slate-300 font-bold">{inq.listingTitle}</p>
-                  <p className="text-slate-500 text-[10px]">Buyer: {inq.buyerName} ({inq.buyerCompany}) $\rightarrow$ Seller: {inq.sellerName}</p>
+                  <p className="text-slate-500 text-[10px]">Buyer: {inq.buyerName} ({inq.buyerCompany || 'Procurement Buyer'}) → Seller: {inq.sellerName}</p>
                 </div>
 
                 <div className="text-right">
@@ -487,7 +543,9 @@ export default function AdminDashboardView() {
             ))}
           </div>
         ) : (
-          <p className="text-xs text-slate-500">No active quote requests registered yet.</p>
+          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 text-center text-xs text-slate-400">
+            No quote requests found matching this status filter.
+          </div>
         )}
       </div>
 
