@@ -135,13 +135,13 @@ export default function InquiryModal() {
           {/* Target Listing Summary Card */}
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between text-[10px] text-slate-400">
-              <span className="uppercase font-bold text-emerald-400">{item.categoryName}</span>
-              <span>Seller: {item.sellerName}</span>
+              <span className="uppercase font-bold text-emerald-400">{item.categoryName || 'Agro Waste'}</span>
+              <span>Seller: {item.sellerName || 'Agro Supplier'}</span>
             </div>
             <p className="text-xs font-black text-white line-clamp-1">{item.title}</p>
             <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-              <span>Supply Available: <strong>{item.quantity} {item.unit}</strong></span>
-              <span>Listing Price: <strong className="text-white">₹{item.pricePerUnit.toLocaleString()} / {item.unit}</strong></span>
+              <span>Supply Available: <strong>{item.quantity} {item.unit || 'Tons'}</strong></span>
+              <span>Listing Price: <strong className="text-white">₹{(Number(item.pricePerUnit) || 0).toLocaleString()} / {item.unit || 'Ton'}</strong></span>
             </div>
           </div>
 

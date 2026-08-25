@@ -26,6 +26,12 @@ export default function ListingCard({ item, layout = 'grid' }) {
     setSelectedListing(item);
   };
 
+  const images = Array.isArray(item?.images) && item.images.length > 0 
+    ? item.images 
+    : ['https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=800'];
+  const displayImage = images[0];
+  const priceFormatted = (Number(item?.pricePerUnit) || 0).toLocaleString();
+
   // Horizontal List View Layout
   if (layout === 'list') {
     return (
@@ -33,13 +39,13 @@ export default function ListingCard({ item, layout = 'grid' }) {
         {/* Left Image & Badges */}
         <div className="relative w-full md:w-56 h-40 md:h-36 rounded-xl overflow-hidden bg-slate-950 shrink-0">
           <img 
-            src={item.images[0]} 
+            src={displayImage} 
             alt={item.title} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
             <span className="bg-emerald-950/90 text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded-md border border-emerald-500/40 uppercase">
-              {item.categoryName}
+              {item.categoryName || 'Agro Waste'}
             </span>
             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
               item.condition === 'Dry' 
@@ -99,8 +105,8 @@ export default function ListingCard({ item, layout = 'grid' }) {
         {/* Right Price & Details Action */}
         <div className="md:border-l md:border-slate-800 md:pl-5 flex md:flex-col items-center md:items-end justify-between md:justify-center gap-3 shrink-0 border-t border-slate-800/80 md:border-t-0 pt-3 md:pt-0">
           <div className="text-left md:text-right">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Price / {item.unit}</p>
-            <p className="text-xl font-black text-white">₹{item.pricePerUnit.toLocaleString()}</p>
+            <p className="text-[10px] uppercase font-bold text-slate-400">Price / {item.unit || 'Ton'}</p>
+            <p className="text-xl font-black text-white">₹{priceFormatted}</p>
           </div>
 
           <button
@@ -122,21 +128,21 @@ export default function ListingCard({ item, layout = 'grid' }) {
         {/* Card Image Header */}
         <div className="relative h-48 w-full bg-slate-950 overflow-hidden">
           <img 
-            src={item.images[0]} 
+            src={displayImage} 
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
 
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
             <span className="bg-emerald-950/90 text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-500/40 uppercase">
-              {item.categoryName}
+              {item.categoryName || 'Agro Waste'}
             </span>
             <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
               item.condition === 'Dry' 
                 ? 'bg-amber-950/90 text-amber-400 border-amber-500/40' 
                 : 'bg-sky-950/90 text-sky-400 border-sky-500/40'
             }`}>
-              {item.condition} ({item.moisturePercent}%)
+              {item.condition || 'Raw'} ({item.moisturePercent ?? 10}%)
             </span>
           </div>
 
@@ -156,10 +162,10 @@ export default function ListingCard({ item, layout = 'grid' }) {
         <div className="p-5 space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-bold text-slate-300 flex items-center gap-1 truncate max-w-[160px]">
-              {item.sellerName}
+              {item.sellerName || 'Agro Supplier'}
               {item.sellerVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
             </span>
-            <span className="text-amber-400 font-bold shrink-0">★ {item.sellerRating}</span>
+            <span className="text-amber-400 font-bold shrink-0">★ {item.sellerRating ?? 4.8}</span>
           </div>
 
           <h3 className="text-base font-extrabold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
@@ -173,11 +179,11 @@ export default function ListingCard({ item, layout = 'grid' }) {
           <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
             <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80 flex items-center gap-1.5 text-slate-300">
               <Scale className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span><strong className="text-white">{item.quantity}</strong> {item.unit}</span>
+              <span><strong className="text-white">{item.quantity}</strong> {item.unit || 'Tons'}</span>
             </div>
             <div className="bg-slate-950 p-2 rounded-xl border border-slate-800/80 flex items-center gap-1.5 text-slate-300">
               <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="truncate">{item.pincode}</span>
+              <span className="truncate">{item.pincode || 'Pincode'}</span>
             </div>
           </div>
         </div>
@@ -186,8 +192,8 @@ export default function ListingCard({ item, layout = 'grid' }) {
       {/* Card Footer Pricing & CTA */}
       <div className="p-5 pt-0 border-t border-slate-800/60 mt-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] uppercase font-bold text-slate-400">Price / {item.unit}</p>
-          <p className="text-lg font-black text-white">₹{item.pricePerUnit.toLocaleString()}</p>
+          <p className="text-[10px] uppercase font-bold text-slate-400">Price / {item.unit || 'Ton'}</p>
+          <p className="text-lg font-black text-white">₹{priceFormatted}</p>
         </div>
 
         <button

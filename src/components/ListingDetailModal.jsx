@@ -53,6 +53,13 @@ export default function ListingDetailModal() {
   const item = selectedListing;
   const isSaved = savedListingIds ? savedListingIds.includes(item.id) : false;
 
+  const images = Array.isArray(item?.images) && item.images.length > 0 
+    ? item.images 
+    : ['https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=800'];
+  const displayImage = images[activeImageIndex] || images[0];
+  const priceFormatted = (Number(item?.pricePerUnit) || 0).toLocaleString();
+  const applicationsList = Array.isArray(item?.applications) ? item.applications : [];
+
   const handleOpenRFQ = () => {
     const targetListing = item;
     setSelectedListing(null);
@@ -69,14 +76,14 @@ export default function ListingDetailModal() {
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-2">
             <span className="bg-emerald-950/90 text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full border border-emerald-500/40 uppercase">
-              {item.categoryName}
+              {item.categoryName || 'Agro Waste'}
             </span>
             <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
               item.condition === 'Dry' 
                 ? 'bg-amber-950/90 text-amber-400 border-amber-500/40' 
                 : 'bg-sky-950/90 text-sky-400 border-sky-500/40'
             }`}>
-              {item.condition} ({item.moisturePercent}% Moisture)
+              {item.condition || 'Raw'} ({item.moisturePercent ?? 10}% Moisture)
             </span>
           </div>
 
@@ -99,7 +106,7 @@ export default function ListingDetailModal() {
             
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-200">{item.sellerName}</span>
+                <span className="font-bold text-slate-200">{item.sellerName || 'Agro Supplier'}</span>
                 {item.sellerVerified && (
                   <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 text-[10px] font-bold">
                     <ShieldCheck className="w-3 h-3" /> Verified Supplier
@@ -108,10 +115,10 @@ export default function ListingDetailModal() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-amber-400 font-bold">★ {item.sellerRating} Trust Rating</span>
+                <span className="text-amber-400 font-bold">★ {item.sellerRating ?? 4.8} Trust Rating</span>
                 <span className="text-slate-500">•</span>
                 <span className="flex items-center gap-1 text-slate-400">
-                  <Calendar className="w-3.5 h-3.5" /> Posted {item.postedAt}
+                  <Calendar className="w-3.5 h-3.5" /> Posted {item.postedAt || 'Recently'}
                 </span>
               </div>
             </div>
@@ -121,20 +128,20 @@ export default function ListingDetailModal() {
           <div className="space-y-3">
             <div className="relative h-64 sm:h-80 w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
               <img 
-                src={item.images[activeImageIndex] || item.images[0]} 
+                src={displayImage} 
                 alt={item.title} 
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold text-slate-300 border border-slate-800 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                {item.location} ({item.pincode})
+                {item.location || 'South India'} ({item.pincode || 'Location Set'})
               </div>
             </div>
 
             {/* Thumbnail selector */}
-            {item.images && item.images.length > 1 && (
+            {images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {item.images.map((imgUrl, idx) => (
+                {images.map((imgUrl, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
@@ -153,13 +160,13 @@ export default function ListingDetailModal() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
               <p className="text-[10px] font-bold text-slate-400 uppercase">Available Quantity</p>
-              <p className="text-base font-black text-white mt-0.5">{item.quantity} {item.unit}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Min Order: {item.minOrder || 1} {item.unit}</p>
+              <p className="text-base font-black text-white mt-0.5">{item.quantity} {item.unit || 'Tons'}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Min Order: {item.minOrder || 1} {item.unit || 'Tons'}</p>
             </div>
 
             <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Price per {item.unit}</p>
-              <p className="text-base font-black text-emerald-400 mt-0.5">₹{item.pricePerUnit.toLocaleString()}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase">Price per {item.unit || 'Ton'}</p>
+              <p className="text-base font-black text-emerald-400 mt-0.5">₹{priceFormatted}</p>
               <p className="text-[10px] text-slate-500 mt-0.5">Ex-warehouse rate</p>
             </div>
 
