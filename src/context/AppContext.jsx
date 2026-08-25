@@ -663,7 +663,6 @@ export const AppProvider = ({ children }) => {
 
     // Listings
     listings,
-    setListings,
     savedListingIds,
     toggleSaveListing,
     addListing,
