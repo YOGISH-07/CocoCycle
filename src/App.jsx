@@ -25,6 +25,7 @@ export default function App() {
     activeTab, 
     userRole, 
     currentUser, 
+    isLoggedIn,
     toasts, 
     removeToast 
   } = useApp();
