@@ -16,7 +16,8 @@ import {
   Building2,
   Sparkles,
   ArrowRight,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { INITIAL_USER_ROLES } from '../data/mockData';
 
@@ -26,14 +27,16 @@ export default function AuthModal() {
     setIsAuthModalOpen, 
     loginWithEmail,
     registerWithEmail,
+    resendConfirmationEmail,
     loginDemoPersona,
     setActiveTab, 
     addToast 
   } = useApp();
 
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'resend'
   const [selectedRole, setSelectedRole] = useState('BUYER'); // 'SELLER' | 'BUYER'
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Form input states
@@ -70,10 +73,18 @@ export default function AuthModal() {
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError('');
+    if (successMsg) setSuccessMsg('');
+  };
+
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setError('');
+    setSuccessMsg('');
   };
 
   const handleQuickDemoLogin = async (roleKey) => {
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
     const res = await loginDemoPersona(roleKey);
     setIsLoading(false);
@@ -86,7 +97,26 @@ export default function AuthModal() {
     e.preventDefault();
     if (isLoading) return;
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
+
+    if (mode === 'resend') {
+      if (!formData.email.trim() || !formData.email.includes('@')) {
+        setError('Please enter a valid email address.');
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await resendConfirmationEmail(formData.email);
+      setIsLoading(false);
+
+      if (!res.success) {
+        setError(res.error?.message || 'Failed to resend confirmation email.');
+      } else {
+        setSuccessMsg(`Verification email sent to ${formData.email}! Please check your inbox and click the verification link.`);
+      }
+      return;
+    }
 
     if (mode === 'login') {
       if (!formData.email || !formData.password) {
@@ -160,16 +190,14 @@ export default function AuthModal() {
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-amber-500 p-0.5">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <Palmtree className="w-4 h-4 text-emerald-400" />
-              </div>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+              🌴
             </div>
             <div>
-              <h2 className="text-base font-black text-white tracking-tight">
-                Coco<span className="text-emerald-400">Cycle</span> Authentication
+              <h2 className="text-base font-black text-white">
+                {mode === 'login' ? 'Sign In to CocoCycle' : mode === 'register' ? 'Create CocoCycle Account' : 'Resend Verification Email'}
               </h2>
-              <p className="text-[10px] text-slate-400">Coconut & Areca Waste Exchange Portal</p>
+              <p className="text-[11px] text-slate-400">Agricultural Waste Sourcing & Trade Portal</p>
             </div>
           </div>
 
@@ -185,7 +213,7 @@ export default function AuthModal() {
         <div className="p-6 overflow-y-auto space-y-5">
           
           {/* Quick Demo Persona Switcher Banner (Gated by VITE_ENABLE_DEMO_PERSONAS) */}
-          {import.meta.env.VITE_ENABLE_DEMO_PERSONAS !== 'false' && (
+          {import.meta.env.VITE_ENABLE_DEMO_PERSONAS !== 'false' && mode !== 'resend' && (
             <>
               <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
@@ -236,11 +264,11 @@ export default function AuthModal() {
             </>
           )}
 
-          {/* Login / Register Toggle Tabs */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+          {/* Login / Register / Resend Toggle Tabs */}
+          <div className="grid grid-cols-3 p-1 bg-slate-950 rounded-xl border border-slate-800">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(''); }}
+              onClick={() => switchMode('login')}
               className={`py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
                 mode === 'login'
                   ? 'bg-emerald-500 text-slate-950 shadow-md'
@@ -253,7 +281,7 @@ export default function AuthModal() {
 
             <button
               type="button"
-              onClick={() => { setMode('register'); setError(''); }}
+              onClick={() => switchMode('register')}
               className={`py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
                 mode === 'register'
                   ? 'bg-emerald-500 text-slate-950 shadow-md'
@@ -261,7 +289,20 @@ export default function AuthModal() {
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Register Account
+              Register
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchMode('resend')}
+              className={`py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mode === 'resend'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Resend Link
             </button>
           </div>
 
@@ -273,173 +314,175 @@ export default function AuthModal() {
             </div>
           )}
 
+          {/* Inline Success Message */}
+          {successMsg && (
+            <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Role Selector (Seller vs Buyer) */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
-                Select Account Role
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole('BUYER')}
-                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
-                    selectedRole === 'BUYER'
-                      ? 'bg-emerald-950/80 border-emerald-500 text-white shadow-sm'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedRole === 'BUYER' ? 'border-emerald-400 bg-emerald-400' : 'border-slate-600'}`}>
-                    {selectedRole === 'BUYER' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950"></div>}
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-white">Buyer / Recycler</p>
-                    <p className="text-[10px] text-slate-400">Buy bulk raw waste</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedRole('SELLER')}
-                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
-                    selectedRole === 'SELLER'
-                      ? 'bg-amber-950/80 border-amber-500 text-white shadow-sm'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedRole === 'SELLER' ? 'border-amber-400 bg-amber-400' : 'border-slate-600'}`}>
-                    {selectedRole === 'SELLER' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950"></div>}
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-white">Seller / Farmer</p>
-                    <p className="text-[10px] text-slate-400">Supply husks & sheaths</p>
-                  </div>
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-500 italic">
-                * Note: Admin access is restricted to verified CocoCycle platform supervisors.
-              </p>
-            </div>
-
-            {/* Registration Specific Fields */}
             {mode === 'register' && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="auth-fullName" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Full Name</label>
-                    <div className="relative">
-                      <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        id="auth-fullName"
-                        aria-label="Full Name"
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        placeholder="Ramesh Kumar"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                      />
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+                  Select Account Role
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('BUYER')}
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
+                      selectedRole === 'BUYER'
+                        ? 'bg-emerald-950/80 border-emerald-500 text-white shadow-sm'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedRole === 'BUYER' ? 'border-emerald-400 bg-emerald-400' : 'border-slate-600'}`}>
+                      {selectedRole === 'BUYER' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950"></div>}
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-xs font-extrabold text-white">Buyer / Recycler</p>
+                      <p className="text-[10px] text-slate-400">Buy bulk raw waste</p>
+                    </div>
+                  </button>
 
-                  <div>
-                    <label htmlFor="auth-companyName" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Company / Mill Name</label>
-                    <div className="relative">
-                      <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        id="auth-companyName"
-                        aria-label="Company Name"
-                        type="text"
-                        name="companyName"
-                        value={formData.companyName}
-                        onChange={handleInputChange}
-                        placeholder="Kallada Coir Pvt Ltd"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                      />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('SELLER')}
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
+                      selectedRole === 'SELLER'
+                        ? 'bg-amber-950/80 border-amber-500 text-white shadow-sm'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${selectedRole === 'SELLER' ? 'border-amber-400 bg-amber-400' : 'border-slate-600'}`}>
+                      {selectedRole === 'SELLER' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950"></div>}
                     </div>
-                  </div>
+                    <div>
+                      <p className="text-xs font-extrabold text-white">Seller / Producer</p>
+                      <p className="text-[10px] text-slate-400">Sell coconut/areca waste</p>
+                    </div>
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="auth-phone" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        id="auth-phone"
-                        aria-label="Phone Number"
-                        type="text"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+91 98470 12345"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="auth-pincode" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Location Pincode</label>
-                    <div className="relative">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        id="auth-pincode"
-                        aria-label="Location Pincode"
-                        type="text"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        placeholder="642001 (Pollachi)"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
+              </div>
             )}
 
-            {/* Email Field */}
-            <div>
-              <label htmlFor="auth-email" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Email Address</label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                <input
-                  id="auth-email"
-                  aria-label="Email Address"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="name@business.com"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
+            {/* Mode: Resend Confirmation Description */}
+            {mode === 'resend' && (
+              <p className="text-xs text-slate-400 leading-relaxed bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                Enter your account email address below. We will send a fresh verification link directed to <strong className="text-emerald-400">https://coco-cycle.vercel.app</strong>.
+              </p>
+            )}
 
-            {/* Password Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Input Fields */}
+            <div className="space-y-3">
+              {mode === 'register' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="auth-fullName" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Full Name *</label>
+                      <div className="relative">
+                        <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Rajesh Kumar"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="auth-companyName" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Company / Farm Name</label>
+                      <div className="relative">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          name="companyName"
+                          value={formData.companyName}
+                          onChange={handleInputChange}
+                          placeholder="e.g. GreenCoir Mills"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="auth-phone" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Phone Number *</label>
+                      <div className="relative">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="+91 98765 43210"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="auth-pincode" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Pincode / Location</label>
+                      <div className="relative">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          name="pincode"
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          placeholder="560001"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div>
-                <label htmlFor="auth-password" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Password</label>
+                <label htmlFor="auth-email" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Email Address *</label>
                 <div className="relative">
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                  <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                   <input
-                    id="auth-password"
-                    aria-label="Password"
-                    type="password"
-                    name="password"
-                    value={formData.password}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="••••••••"
+                    placeholder="name@company.com"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
+              {mode !== 'resend' && (
+                <div>
+                  <label htmlFor="auth-password" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Password *</label>
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="••••••••"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
+
               {mode === 'register' && (
                 <div>
-                  <label htmlFor="auth-confirmPassword" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Confirm Password</label>
+                  <label htmlFor="auth-confirmPassword" className="block text-[10px] font-bold text-slate-300 uppercase mb-1">Confirm Password *</label>
                   <div className="relative">
                     <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -470,7 +513,9 @@ export default function AuthModal() {
                 </>
               ) : (
                 <>
-                  <span>{mode === 'login' ? 'Sign In to CocoCycle' : 'Complete Registration'}</span>
+                  <span>
+                    {mode === 'login' ? 'Sign In to CocoCycle' : mode === 'register' ? 'Complete Registration' : 'Resend Verification Link'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

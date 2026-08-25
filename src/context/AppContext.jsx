@@ -249,6 +249,39 @@ export const AppProvider = ({ children }) => {
     return { success: true, data };
   };
 
+  const resendConfirmationEmail = async (email) => {
+    if (!email || !email.includes('@')) {
+      const err = { message: 'Please enter a valid email address.' };
+      addToast(err.message, 'error');
+      return { success: false, error: err };
+    }
+
+    const redirectTo = typeof window !== 'undefined' && window.location && window.location.origin
+      ? window.location.origin
+      : 'https://coco-cycle.vercel.app';
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo: redirectTo
+      }
+    });
+
+    if (error) {
+      const isRateLimit = (error.message || '').toLowerCase().includes('rate limit') || error.status === 429;
+      const displayMsg = isRateLimit
+        ? 'Email resend rate limit reached. Please wait a few minutes before requesting another link.'
+        : `Resend failed: ${error.message}`;
+
+      addToast(displayMsg, 'error');
+      return { success: false, error: { ...error, message: displayMsg } };
+    }
+
+    addToast(`Verification email resent to ${email}! Please check your inbox.`, 'success');
+    return { success: true };
+  };
+
   const loginDemoPersona = async (roleKey) => {
     const demoEmails = {
       BUYER: 'buyer@cococycle.io',
@@ -642,6 +675,7 @@ export const AppProvider = ({ children }) => {
     isAuthLoading,
     loginWithEmail,
     registerWithEmail,
+    resendConfirmationEmail,
     loginDemoPersona,
     logoutUser,
     updateProfile,
