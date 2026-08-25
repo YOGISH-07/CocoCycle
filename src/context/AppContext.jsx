@@ -86,7 +86,11 @@ export const AppProvider = ({ children }) => {
             condition: item.condition,
             moisturePercent: Number(item.moisture_percent),
             packaging: item.packaging,
-            applications: item.applications || [],
+            applications: Array.isArray(item.applications) 
+              ? item.applications 
+              : typeof item.applications === 'string' && item.applications.trim() 
+                ? item.applications.split(',').map((s) => s.trim()) 
+                : [],
             images: Array.isArray(item.images) && item.images.length > 0 ? item.images : ['https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=800'],
             description: item.description,
             status: item.status,

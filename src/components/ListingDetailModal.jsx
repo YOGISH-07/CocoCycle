@@ -58,7 +58,11 @@ export default function ListingDetailModal() {
     : ['https://images.unsplash.com/photo-1541480601022-2308c0f02487?auto=format&fit=crop&q=80&w=800'];
   const displayImage = images[activeImageIndex] || images[0];
   const priceFormatted = (Number(item?.pricePerUnit) || 0).toLocaleString();
-  const applicationsList = Array.isArray(item?.applications) ? item.applications : [];
+  const applicationsList = Array.isArray(item?.applications) 
+    ? item.applications 
+    : typeof item?.applications === 'string' && item.applications.trim() 
+      ? item.applications.split(',').map((s) => s.trim()) 
+      : [];
 
   const handleOpenRFQ = () => {
     const targetListing = item;
@@ -192,11 +196,11 @@ export default function ListingDetailModal() {
           </div>
 
           {/* Recommended Applications (if available) */}
-          {item.applications && item.applications.length > 0 && (
+          {applicationsList.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">Recommended Uses</h3>
               <div className="flex flex-wrap gap-2">
-                {item.applications.map((app, idx) => (
+                {applicationsList.map((app, idx) => (
                   <span key={idx} className="bg-slate-950 border border-slate-800 text-slate-300 text-xs px-3 py-1 rounded-xl font-medium flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     {app}

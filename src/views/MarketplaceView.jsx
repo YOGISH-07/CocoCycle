@@ -88,7 +88,7 @@ export default function MarketplaceView() {
     if (sortBy === 'price_asc') return a.pricePerUnit - b.pricePerUnit;
     if (sortBy === 'price_desc') return b.pricePerUnit - a.pricePerUnit;
     if (sortBy === 'quantity_desc') return b.quantity - a.quantity;
-    if (sortBy === 'newest') return b.id.localeCompare(a.id);
+    if (sortBy === 'newest') return (b.id || '').toString().localeCompare((a.id || '').toString());
     return 0; // 'recommended' uses natural mock ordering
   });
 
