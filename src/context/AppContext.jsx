@@ -189,10 +189,6 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('cococycle_saved', JSON.stringify(savedListingIds));
   }, [savedListingIds]);
 
-  useEffect(() => {
-    localStorage.setItem('cococycle_inquiries', JSON.stringify(inquiries));
-  }, [inquiries]);
-
   // Toast Notification Handlers
   const addToast = (message, type = 'success') => {
     const id = Date.now();
@@ -566,6 +562,10 @@ export const AppProvider = ({ children }) => {
 
   // Use real DB inquiries if query succeeded. Fallback to localInquiries ONLY if query failed.
   const inquiries = inquiriesError ? localInquiries : dbInquiries;
+
+  useEffect(() => {
+    localStorage.setItem('cococycle_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
 
   // Buyer Inquiry / RFQ Handlers
   const submitRFQ = async (listing, requestedQuantity, offeredPricePerUnit, deliveryLocation, expectedDeliveryDate, message) => {
